@@ -92,6 +92,10 @@ public:
     std::unique_ptr<RenderStyle> renderStyle;
 
     bool cameraMutated = false;
+
+    optional<uint8_t> fixedPrefetchZoom;
+    optional<uint8_t> dynamicPrefetchZoomDelta;
+
     bool loading = false;
 
     util::AsyncTask asyncInvalidate;
@@ -243,7 +247,9 @@ void Map::Impl::render(View& view) {
         style->impl->getLayerImpls(),
         scheduler,
         fileSource,
-        annotationManager
+        annotationManager,
+        fixedPrefetchZoom,
+        dynamicPrefetchZoomDelta
     });
 
     bool loaded = style->impl->isLoaded() && renderStyle->isLoaded();
@@ -819,6 +825,22 @@ MapDebugOptions Map::getDebug() const {
 
 bool Map::isFullyLoaded() const {
     return impl->style->impl->isLoaded() && impl->renderStyle && impl->renderStyle->isLoaded();
+}
+
+void Map::setFixedPrefetchZoom(optional<uint8_t> zoom) {
+    impl->fixedPrefetchZoom = zoom;
+}
+
+optional<uint8_t> Map::getFixedPrefetchZoom() const {
+    return impl->fixedPrefetchZoom;
+}
+
+void Map::setDynamicPrefetchZoomDelta(optional<uint8_t> delta) {
+    impl->dynamicPrefetchZoomDelta = delta;
+}
+
+optional<uint8_t> Map::getDynamicPrefetchZoomDelta() const {
+    return impl->dynamicPrefetchZoomDelta;
 }
 
 void Map::onLowMemory() {
