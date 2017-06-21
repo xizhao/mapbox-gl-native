@@ -41,7 +41,7 @@ TEST(Buckets, SymbolBucket) {
 
 TEST(Buckets, RasterBucket) {
     gl::Context context;
-    UnassociatedImage rgba({ 1, 1 });
+    PremultipliedImage rgba({ 1, 1 });
 
     RasterBucket bucket = { std::move(rgba) };
     ASSERT_TRUE(bucket.needsUpload());

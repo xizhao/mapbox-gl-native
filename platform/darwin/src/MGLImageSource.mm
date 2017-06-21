@@ -60,9 +60,9 @@
 
 - (void)setImage:(MGLImage *)image {
     if (image != nullptr) {
-        self.rawSource->setImage(image.mgl_unassociatedImage);        
+        self.rawSource->setImage(image.mgl_premultipliedImage);
     } else {
-        self.rawSource->setImage(mbgl::UnassociatedImage({0,0}));
+        self.rawSource->setImage(mbgl::PremultipliedImage({0,0}));
     }
     _image = image;
 }
