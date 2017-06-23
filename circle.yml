@@ -330,6 +330,101 @@ jobs:
             - node_modules
             - /root/.ccache
 
+
+# ------------------------------------------------------------------------------
+  linux-clang4-sanitize-address:
+    docker:
+      - image: mbgl/ci:r4-linux-clang-4
+    working_directory: /src
+    environment:
+      LIBSYSCONFCPUS: 6
+      JOBS: 6
+      BUILDTYPE: Sanitize
+      WITH_EGL: 1
+      GDB: '' # Do not run with GDB
+      CXXFLAGS: -fsanitize=address
+      LDFLAGS: -fsanitize=address
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-linux-clang4-sanitize-address
+          paths:
+            - node_modules
+            - /root/.ccache
+      - run:
+          name: Environment Setup
+          command: |
+            # LLVM has a hard check for "llvm-symbolizer" and doesn't support suffixed executables
+            ln -s /usr/bin/llvm-symbolizer-* /usr/bin/llvm-symbolizer
+            # We'll use tee to redirect stderr to a file so we can check for sanitiziation
+            # https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/1059947
+            sed -i 's/"$@" 2>&1/"$@"/' /usr/bin/xvfb-run
+      - run:
+          name: Build test
+          command: make test
+      - run:
+          name: Run tests
+          command: |
+            xvfb-run --server-args="-screen 0 1024x768x24" make run-test 2> >(tee sanitizer 1>&2)
+            # Unfortunately, ASAN_OPTIONS=exitcode=1 doesn't work, so we have to manually check.
+            # Uncomment this once we've fixed all undefined behavior to make new undefined behavior
+            # fail on CircleCI.
+            # [ -z "$(sed -n '/^SUMMARY: AddressSanitizer:/p' sanitizer)" ]
+      - save_cache:
+          key: v1-linux-clang4-sanitize-address
+          paths:
+            - node_modules
+            - /root/.ccache
+
+
+# ------------------------------------------------------------------------------
+  linux-clang4-sanitize-undefined:
+    docker:
+      - image: mbgl/ci:r4-linux-clang-4
+    working_directory: /src
+    environment:
+      LIBSYSCONFCPUS: 6
+      JOBS: 6
+      BUILDTYPE: Sanitize
+      WITH_EGL: 1
+      GDB: '' # Do not run with GDB
+      CXXFLAGS: -fsanitize=undefined
+      LDFLAGS: -fsanitize=undefined
+      UBSAN_OPTIONS: print_stacktrace=1:symbolize=1:color=always:print_summary=1
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-linux-clang4-sanitize-undefined
+          paths:
+            - node_modules
+            - /root/.ccache
+      - run:
+          name: Environment Setup
+          command: |
+            # LLVM has a hard check for "llvm-symbolizer" and doesn't support suffixed executables
+            ln -s /usr/bin/llvm-symbolizer-* /usr/bin/llvm-symbolizer
+            # We'll use tee to redirect stderr to a file so we can check for sanitiziation
+            # https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/1059947
+            sed -i 's/"$@" 2>&1/"$@"/' /usr/bin/xvfb-run
+      - run:
+          name: Build test
+          command: make test
+      - run:
+          name: Run tests
+          command: |
+            xvfb-run --server-args="-screen 0 1024x768x24" make run-test 2> >(tee sanitizer 1>&2)
+            # Unfortunately, UBSAN_OPTIONS=exitcode=1 doesn't work, so we have to manually check.
+            # Uncomment this once we've fixed all undefined behavior to make new undefined behavior
+            # fail on CircleCI.
+            # [ -z "$(sed -n '/^SUMMARY: UndefinedBehaviorSanitizer:/p' sanitizer)" ]
+      - save_cache:
+          key: v1-linux-clang4-sanitize-undefined
+          paths:
+            - node_modules
+            - /root/.ccache
+
+
 # ------------------------------------------------------------------------------
   linux-gcc5-debug-coverage:
     docker:
