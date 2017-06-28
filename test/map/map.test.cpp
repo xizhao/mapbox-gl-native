@@ -595,7 +595,7 @@ TEST(Map, DontLoadUnneededTiles) {
 TEST(Map, TEST_DISABLED_ON_CI(ContinuousRendering)) {
     util::RunLoop runLoop;
     HeadlessBackend backend { test::sharedDisplay() };
-    BackendScope scope { backend };
+    BackendScope scope (backend);
     OffscreenView view { backend.getContext() };
 
     using namespace std::chrono_literals;
@@ -622,13 +622,12 @@ TEST(Map, TEST_DISABLED_ON_CI(ContinuousRendering)) {
             });
         }
 
-        BackendScope scope2(backend);
-        bridge.render(backend, view);
+        bridge.render(view);
     };
 
     ThreadPool threadPool { 4 };
     DefaultFileSource fileSource(":memory:", "test/fixtures/api/assets");
-    Map map(std::make_unique<StubRendererFrontend>(invalidate), MapObserver::nullObserver(),
+    Map map(std::make_unique<StubRendererFrontend>(backend, invalidate), MapObserver::nullObserver(),
             view.getSize(), 1, fileSource, threadPool, MapMode::Continuous);
 
     isLoaded = [&] {

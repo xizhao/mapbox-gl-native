@@ -2,7 +2,6 @@
 #pragma once
 
 #include <mbgl/map/backend.hpp>
-#include <mbgl/renderer/renderer.hpp>
 #include <mbgl/renderer/renderer_frontend.hpp>
 #include <mbgl/util/async_task.hpp>
 
@@ -13,12 +12,17 @@ namespace mbgl {
 
 class StubRendererFrontend : public RendererFrontend {
 public:
-    StubRendererFrontend(std::function<void (StubRendererFrontend&)>);
+    // Calls the provided callback when it's time to render
+    using InvalidateCallback = std::function<void (StubRendererFrontend&)>;
+    StubRendererFrontend(Backend&, InvalidateCallback);
+
+    // Will render async with a default backend scope
     StubRendererFrontend(Backend&, View&);
-    ~StubRendererFrontend() override = default;
+
+    ~StubRendererFrontend() override;
 
     void update(std::shared_ptr<UpdateParameters>) override;
-    void render(Backend&, View& view);
+    void render(View& view);
 
     std::vector<Feature> queryRenderedFeatures(std::shared_ptr<RenderedQueryParameters>) const override;
 
@@ -31,6 +35,7 @@ public:
     void dumpDebugLogs() override;
 
 private:
+    Backend& backend;
     std::unique_ptr<Renderer> renderer;
     std::shared_ptr<UpdateParameters> updateParameters;
     util::AsyncTask asyncInvalidate;

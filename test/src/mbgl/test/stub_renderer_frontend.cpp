@@ -2,21 +2,26 @@
 
 #include <mbgl/renderer/renderer.hpp>
 #include <mbgl/map/backend_scope.hpp>
-#include <mbgl/util/async_task.hpp>
 
 namespace mbgl {
 
-StubRendererFrontend::StubRendererFrontend(std::function<void (StubRendererFrontend&)> invalidate)
-    : asyncInvalidate([this, invalidate=std::move(invalidate)]() {
+StubRendererFrontend::StubRendererFrontend(Backend& backend_, InvalidateCallback invalidate)
+    : backend(backend_)
+    , asyncInvalidate([this, invalidate=std::move(invalidate)]() {
                 invalidate(*this);
             }) {
 }
 
-StubRendererFrontend::StubRendererFrontend(Backend& backend, View& view)
-        : asyncInvalidate([&]() {
+StubRendererFrontend::StubRendererFrontend(Backend& backend_, View& view)
+        : backend(backend_)
+        , asyncInvalidate([&]() {
                 BackendScope guard { backend };
-                this->render(backend, view);
+                this->render(view);
             }) {
+}
+
+StubRendererFrontend::~StubRendererFrontend() {
+    BackendScope guard { backend };
 }
 
 void StubRendererFrontend::onLowMemory() {
@@ -39,12 +44,9 @@ void StubRendererFrontend::update(std::shared_ptr<UpdateParameters> params) {
     asyncInvalidate.send();
 }
 
-void StubRendererFrontend::render(Backend& backend, View& view) {
+void StubRendererFrontend::render(View& view) {
     assert(BackendScope::exists());
-
-    if (!updateParameters) {
-        return;
-    }
+    if (!updateParameters || !renderer) return;
 
     renderer->render(backend, view, *updateParameters);
 }
