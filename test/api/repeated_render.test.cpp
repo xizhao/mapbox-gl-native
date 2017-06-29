@@ -46,9 +46,7 @@ TEST(API, RepeatedRender) {
 
         ASSERT_EQ(256u, result.size.width);
         ASSERT_EQ(512u, result.size.height);
-#if !TEST_READ_ONLY
-        util::write_file("test/fixtures/api/1.png", encodePNG(result));
-#endif
+        test::checkImage("test/fixtures/api/repeated_render", result, 0.0002, 0.1);
     }
 
     {
@@ -64,9 +62,7 @@ TEST(API, RepeatedRender) {
 
         ASSERT_EQ(256u, result.size.width);
         ASSERT_EQ(512u, result.size.height);
-#if !TEST_READ_ONLY
-        util::write_file("test/fixtures/api/2.png", encodePNG(result));
-#endif
+        test::checkImage("test/fixtures/api/repeated_render", result, 0.0002, 0.1);
     }
 
     auto observer = Log::removeObserver();
