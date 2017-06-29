@@ -70,3 +70,53 @@ TEST(API, RepeatedRender) {
     auto unchecked = flo->unchecked();
     EXPECT_TRUE(unchecked.empty()) << unchecked;
 }
+
+TEST(API, ZoomLevelsRender) {
+    util::RunLoop loop;
+
+    const auto style = util::read_file("test/fixtures/api/streets-lite.json");
+
+    HeadlessBackend backend { test::sharedDisplay() };
+    BackendScope scope { backend };
+    OffscreenView view { backend.getContext(), { 512, 512 } };
+    DefaultFileSource fileSource(":memory:", "test/fixtures/api/assets");
+    fileSource.setAccessToken("mapbox");
+    ThreadPool threadPool(4);
+
+    Log::setObserver(std::make_unique<FixtureLogObserver>());
+
+    Map map(backend, view.getSize(), 1, fileSource, threadPool, MapMode::Still);
+    {
+        map.getStyle().loadJSON(style);
+        map.setLatLngZoom(LatLng { 60.2025, 24.9054 }, 16.0);
+        PremultipliedImage result;
+        map.renderStill(view, [&](std::exception_ptr) {
+            result = view.readStillImage();
+        });
+
+        while (!result.valid()) {
+            loop.runOnce();
+        }
+
+        test::checkImage("test/fixtures/api/repeated_render_z16", result, 0.0002, 0.1);
+    }
+
+    {
+        map.setLatLngZoom(LatLng { 60.2025, 24.9054 }, 15.0);
+        PremultipliedImage result;
+        map.renderStill(view, [&](std::exception_ptr) {
+            result = view.readStillImage();
+        });
+
+        while (!result.valid()) {
+            loop.runOnce();
+        }
+
+        test::checkImage("test/fixtures/api/repeated_render_z15", result, 0.0002, 0.1);
+    }
+
+    auto observer = Log::removeObserver();
+    auto flo = dynamic_cast<FixtureLogObserver*>(observer.get());
+    auto unchecked = flo->unchecked();
+    EXPECT_TRUE(unchecked.empty()) << unchecked;
+}
